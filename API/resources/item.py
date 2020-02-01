@@ -5,26 +5,32 @@ from flask_jwt_extended import (
 )
 from models.item import ItemModel
 
+BLANK_ERROR = "'{}' cannot be left blank!"
+NAME_ALREADY_EXITS = "An item with name '{}' already exits"
+ERROR_INSERTING = "An error occurred while inserting the item."
+ITEM_NOT_FOUND = "Item not found."
+ITEM_DELETED = "Item deleted."
+
 
 class Item(Resource):
     parser = reqparse.RequestParser()
     parser.add_argument(
-        "price", type=float, required=True, help="This field cannot be left blank!"
+        "price", type=float, required=True, help=BLANK_ERROR.format('price')
     )
     parser.add_argument(
-        "store_id", type=int, required=True, help="Every item needs a store_id."
+        "store_id", type=int, required=True, help=BLANK_ERROR.format('store id')
     )
 
     def get(self, name: str):
         item = ItemModel.find_by_name(name)
         if item:
             return item.json(), 200
-        return {"message": "Item not found."}, 404
+        return {"message": }, 404
 
     @fresh_jwt_required
     def post(self, name: str):
         if ItemModel.find_by_name(name):
-            return ({"message": "An item with name '{}' already exists.".format(name)}, 400)
+            return ({"message": NAME_ALREADY_EXITS.format(name)}, 400)
 
         data = Item.parser.parse_args()
 
@@ -33,7 +39,7 @@ class Item(Resource):
         try:
             item.save_to_db()
         except:
-            return {"message": "An error occurred while inserting the item."}, 500
+            return {"message": ERROR_INSERTING}, 500
 
         return item.json(), 201
 
@@ -42,8 +48,8 @@ class Item(Resource):
         item = ItemModel.find_by_name(name)
         if item:
             item.delete_from_db()
-            return {"message": "Item deleted."}, 200
-        return {"message": "Item not found."}, 404
+            return {"message": ITEM_DELETED}, 200
+        return {"message": ITEM_NOT_FOUND}, 404
 
     def put(self, name: str):
         data = Item.parser.parse_args()
